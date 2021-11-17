@@ -1,0 +1,127 @@
+-- checking for duplicates based on product_id
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+-- checking the nature of the duplicates 
+SELECT *
+FROM sales_data 
+WHERE product_id IN 
+	(SELECT product_id 
+	FROM sales_data 
+	GROUP BY product_id
+	HAVING COUNT(product_id)>1)
+ORDER BY product_id DESC;
+
+-- numbering duplicate rows with row_number function 
+SELECT ROW_NUMBER() OVER (Partition BY product_id),
+	price, retail_price, units_sold, uses_ad_boosts, rating	
+	rating_count, countries_shipped_to, origin_country
+	merchant_title, merchant_satisfaction, merchant_rating_count
+	merchant_rating, merchant_id, merchant_has_profile_picture, 
+	product_id, merchant_satisfaction_temp
+FROM sales_data;
+
+-- filtering out the rows with row_number > 1 
+-- 1341 rows affected
+SELECT * 
+FROM( 
+	SELECT ROW_NUMBER() OVER (PARTITION BY product_id),
+	price, retail_price, units_sold, uses_ad_boosts, rating,	
+	rating_count, countries_shipped_to, origin_country,
+	merchant_title, merchant_satisfaction, merchant_rating_count,
+	merchant_rating, merchant_id, merchant_has_profile_picture, 
+	product_id, merchant_satisfaction_temp
+	FROM sales_data
+	) t 
+WHERE t.row_number < 2;  
+
+-- selecting duplicates 
+-- 217 rows affected 
+SELECT * 
+FROM 
+	sales_data x,
+	sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+ 	AND x.units_sold = y.units_sold 
+    AND x.uses_ad_boosts = y.uses_ad_boosts
+    AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+    AND x.countries_shipped_to = y.countries_shipped_to
+    AND x.origin_country = y.origin_country
+    AND x.merchant_title = y.merchant_title 
+    AND x.merchant_satisfaction = y.merchant_satisfaction
+    AND x.merchant_rating_count = x.merchant_rating_count
+    AND x.merchant_rating = y.merchant_rating
+    AND x.merchant_id = y.merchant_id 
+    AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+    AND x.product_id = y.product_id
+    AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- COUNT(*) shows that total rows = 1573 
+-- There's an extra row that hasnt been selected cause it was duplicated thrice
+SELECT COUNT(*)
+FROM sales_data
+
+-- deleting duplicates (except the thrice one)
+DELETE FROM sales_data x USING sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+	AND x.units_sold = y.units_sold 
+	AND x.uses_ad_boosts = y.uses_ad_boosts
+	AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+	AND x.countries_shipped_to = y.countries_shipped_to
+	AND x.origin_country = y.origin_country
+	AND x.merchant_title = y.merchant_title 
+	AND x.merchant_satisfaction = y.merchant_satisfaction
+	AND x.merchant_rating_count = x.merchant_rating_count
+	AND x.merchant_rating = y.merchant_rating
+	AND x.merchant_id = y.merchant_id 
+	AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+	AND x.product_id = y.product_id
+	AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- Quick Check 1
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+-- There are still 36 rows that are duplicated (18 entries)
+-- The reason was - merchant satisfaction & origin country was NULL
+-- once removed 32 entries were deleted
+DELETE FROM sales_data x
+	USING sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+	AND x.units_sold = y.units_sold 
+	AND x.uses_ad_boosts = y.uses_ad_boosts
+	AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+	AND x.countries_shipped_to = y.countries_shipped_to
+	AND x.merchant_title = y.merchant_title 
+	AND x.merchant_rating_count = x.merchant_rating_count
+	AND x.merchant_rating = y.merchant_rating
+	AND x.merchant_id = y.merchant_id 
+	AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+	AND x.product_id = y.product_id
+	AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- Quick Check = 0 duplicated entries
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+
+	
+
+
+
+ 

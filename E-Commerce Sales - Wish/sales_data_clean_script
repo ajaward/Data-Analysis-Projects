@@ -1,0 +1,299 @@
+-- Checking for duplicates based on product_id
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+-- Checking the nature of the duplicates 
+SELECT *
+FROM sales_data 
+WHERE product_id IN 
+	(SELECT product_id 
+	FROM sales_data 
+	GROUP BY product_id
+	HAVING COUNT(product_id)>1)
+ORDER BY product_id DESC;
+
+-- Numbering duplicate rows with row_number function 
+SELECT ROW_NUMBER() OVER (Partition BY product_id),
+	price, retail_price, units_sold, uses_ad_boosts, rating	
+	rating_count, countries_shipped_to, origin_country
+	merchant_title, merchant_satisfaction, merchant_rating_count
+	merchant_rating, merchant_id, merchant_has_profile_picture, 
+	product_id, merchant_satisfaction_temp
+FROM sales_data;
+
+-- Filtering out the rows with row_number > 1 
+-- 1341 rows affected
+SELECT * 
+FROM( 
+	SELECT ROW_NUMBER() OVER (PARTITION BY product_id),
+	price, retail_price, units_sold, uses_ad_boosts, rating,	
+	rating_count, countries_shipped_to, origin_country,
+	merchant_title, merchant_satisfaction, merchant_rating_count,
+	merchant_rating, merchant_id, merchant_has_profile_picture, 
+	product_id, merchant_satisfaction_temp
+	FROM sales_data
+	) t 
+WHERE t.row_number < 2;  
+
+-- Selecting duplicates 
+-- 217 rows affected 
+SELECT * 
+FROM 
+	sales_data x,
+	sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+ 	AND x.units_sold = y.units_sold 
+    AND x.uses_ad_boosts = y.uses_ad_boosts
+    AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+    AND x.countries_shipped_to = y.countries_shipped_to
+    AND x.origin_country = y.origin_country
+    AND x.merchant_title = y.merchant_title 
+    AND x.merchant_satisfaction = y.merchant_satisfaction
+    AND x.merchant_rating_count = x.merchant_rating_count
+    AND x.merchant_rating = y.merchant_rating
+    AND x.merchant_id = y.merchant_id 
+    AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+    AND x.product_id = y.product_id
+    AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- COUNT(*) shows that total rows = 1573 
+-- There's an extra row that hasnt been selected cause it was duplicated thrice
+SELECT COUNT(*)
+FROM sales_data
+
+-- Deleting duplicates (except the thrice one)
+DELETE FROM sales_data x USING sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+	AND x.units_sold = y.units_sold 
+	AND x.uses_ad_boosts = y.uses_ad_boosts
+	AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+	AND x.countries_shipped_to = y.countries_shipped_to
+	AND x.origin_country = y.origin_country
+	AND x.merchant_title = y.merchant_title 
+	AND x.merchant_satisfaction = y.merchant_satisfaction
+	AND x.merchant_rating_count = x.merchant_rating_count
+	AND x.merchant_rating = y.merchant_rating
+	AND x.merchant_id = y.merchant_id 
+	AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+	AND x.product_id = y.product_id
+	AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- Quick Check 1
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+-- There are still 36 rows that are duplicated (18 entries)
+-- The reason was - merchant satisfaction & origin country was NULL
+-- Once removed 32 entries were deleted
+DELETE FROM sales_data x
+	USING sales_data y
+WHERE x.ctid < y.ctid 
+	AND x.price = y.price 
+	AND x.retail_price = y.retail_price
+	AND x.units_sold = y.units_sold 
+	AND x.uses_ad_boosts = y.uses_ad_boosts
+	AND x.rating = y.rating 
+	AND x.rating_count = y.rating_count 
+	AND x.countries_shipped_to = y.countries_shipped_to
+	AND x.merchant_title = y.merchant_title 
+	AND x.merchant_rating_count = x.merchant_rating_count
+	AND x.merchant_rating = y.merchant_rating
+	AND x.merchant_id = y.merchant_id 
+	AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+	AND x.product_id = y.product_id
+	AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+
+-- Quick Check = 0 duplicated entries
+SELECT product_id, count(*)
+FROM sales_data 
+GROUP BY product_id
+HAVING COUNT(*) > 1;
+
+-- Deleting column because its not needed
+ALTER TABLE sales_data 
+DROP COLUMN merchant_satisfaction_temp;
+
+-- Identifying null entries 
+-- Column 8 (origin country) has 13 null entries and column 10 (merchant_satisfaction) has 262
+SELECT 
+	COUNT (*) - COUNT(price) AS c_1,
+	COUNT (*) - COUNT(retail_price) AS c_2,
+	COUNT (*) - COUNT(units_sold) AS c_3,
+	COUNT (*) - COUNT(uses_ad_boosts) AS c_4,
+	COUNT (*) - COUNT(rating) AS c_5,
+	COUNT (*) - COUNT(rating_count) AS c_6,
+	COUNT (*) - COUNT(countries_shipped_to) AS c_7,
+	COUNT (*) - COUNT(origin_country) AS c_8,
+	COUNT (*) - COUNT(merchant_title) AS c_9,
+	COUNT (*) - COUNT(merchant_satisfaction) AS c_10,
+	COUNT (*) - COUNT(merchant_rating_count) AS c_11,
+	COUNT (*) - COUNT(merchant_rating) AS c_12,
+	COUNT (*) - COUNT(merchant_id) AS c_13,
+	COUNT (*) - COUNT(merchant_has_profile_picture) AS c_14,
+	COUNT(*) - COUNT(product_id) AS c_15
+FROM sales_data
+
+/*Potential questions from origin country - 
+1. Relationship between origin_country & price
+2. Relationship between origin_country & uses_ad_boosts
+3. Relationship between origin_country & rating
+4. Relationship between origin_country & merchant_rating
+Need to create a seperate csv for this analysis*/
+SELECT 
+	origin_country,
+	price, 
+	uses_ad_boosts, 
+	rating
+	merchant_rating
+FROM sales_data
+WHERE origin_country IS NOT NULL;
+
+/*Potential questions from merchant_satisfaction - 
+1. Relationship between merchant_satisfaction & price
+2. Relationship between merchant_satisfaction & units_sold 
+Need to create a seperate csv for this analysis*/
+SELECT 
+	merchant_satisfaction,
+	price, 
+	units_sold
+FROM sales_data
+WHERE merchant_satisfaction IS NOT NULL;
+
+--Cleaning merchant_title column (strings)
+--Viewing the data 
+SELECT merchant_title, LENGTH(merchant_title) AS l1
+FROM sales_data
+ORDER BY l1 DESC;
+
+SELECT AVG(LENGTH (merchant_title)) AS l1
+FROM sales_data;
+
+--Reducing the strings to 10 characters 
+SELECT merchant_title,
+LEFT(merchant_title, 10)
+FROM sales_data;
+
+UPDATE sales_data
+SET merchant_title = LEFT(merchant_title, 10);
+
+-- Turning all the strings into lowercase 
+SELECT merchant_title, 
+LOWER(merchant_title)
+FROM sales_data;
+
+UPDATE sales_data 
+SET merchant_title = LOWER(merchant_title)
+
+/*The reasoning behind the above string functions is the following - there were certain 
+entries that were clearly the same merchant but after a certain length there would be a 
+disparity. Furthemore, there were also instances when the letters were the same except
+for random capitalization */ 
+
+-- Deleting columns because they are not needed
+ALTER TABLE sales_data 
+	DROP COLUMN rating_count
+	DROP COLUMN merchant_rating_count,
+	DROP COLUMN merchant_has_profile_picture,
+	DROP COLUMN merchant_id;
+
+-- Creating new columns needed for analysis 
+-- Creating column for discount amount 
+SELECT 
+	*,
+	ROUND(((retail_price - price)*100)/(retail_price), 2) AS discount
+FROM sales_data;
+
+-- Creating column for sales revenue 
+SELECT *, (price * units_sold) AS sales_revenue
+FROM sales_data;
+
+-- Creating column to categorize units_sold (filtering purposes) 
+SELECT DISTINCT units_sold AS u_s, COUNT(units_sold)
+FROM sales_data
+GROUP BY u_s;
+
+SELECT *,
+CASE 
+	WHEN units_sold >= 0 
+		AND units_sold < 1000 THEN 'Very Low'
+	WHEN units_sold >= 1000
+		AND units_sold < 5000 THEN 'Low'
+	WHEN units_sold >= 5000
+		AND units_sold < 10000 THEN 'Medium'
+	WHEN units_sold >= 10000
+		AND units_sold < 20000 THEN 'Medium High'
+	WHEN units_sold >= 20000
+		AND units_sold < 50000 THEN 'High'
+	WHEN units_sold >= 50000 
+		AND units_sold < 100000 THEN 'Very High'
+	WHEN units_sold >= 100000 THEN 'The Highest'
+END units_sold_volume 
+FROM sales_data;
+
+-- Merging new columns for export 
+SELECT 
+	*,
+	ROUND(((retail_price - price)*100)/(retail_price), 2) AS discount,
+	ROUND((price * units_sold), 0) AS sales_revenue,
+	CASE 
+		WHEN units_sold >= 0 
+			AND units_sold < 1000 THEN 'Very Low'
+		WHEN units_sold >= 1000
+			AND units_sold < 5000 THEN 'Low'
+		WHEN units_sold >= 5000
+			AND units_sold < 10000 THEN 'Medium'
+		WHEN units_sold >= 10000
+			AND units_sold < 20000 THEN 'Medium High'
+		WHEN units_sold >= 20000
+			AND units_sold < 50000 THEN 'High'
+		WHEN units_sold >= 50000 
+			AND units_sold < 100000 THEN 'Very High'
+		WHEN units_sold >= 100000 THEN 'The Highest'
+	END units_sold_volume 
+FROM sales_data
+ORDER BY sales_revenue DESC;
+
+-- Identifying relationship between sales_revenue and units_sold_volume 
+SELECT ROUND(AVG(sq.sales_revenue),0) AS avg_revenue, sq.units_sold_volume 
+FROM (
+	SELECT 
+		*,
+		(price * units_sold) AS sales_revenue,
+		CASE 
+		WHEN units_sold >= 0 
+			AND units_sold < 1000 THEN 'Very Low'
+		WHEN units_sold >= 1000
+			AND units_sold < 5000 THEN 'Low'
+		WHEN units_sold >= 5000
+			AND units_sold < 10000 THEN 'Medium'
+		WHEN units_sold >= 10000
+			AND units_sold < 20000 THEN 'Medium High'
+		WHEN units_sold >= 20000
+			AND units_sold < 50000 THEN 'High'
+		WHEN units_sold >= 50000 
+			AND units_sold < 100000 THEN 'Very High'
+		WHEN units_sold >= 100000 THEN 'The Highest'
+		END units_sold_volume 
+	FROM sales_data) AS sq
+GROUP BY sq.units_sold_volume
+ORDER BY avg_revenue;
+
+/*As expected, there is a positive relationship between units_sold_volume & avg_revenue.
+This was important in figuring out which data to include in the dashboard. What's the KPI 
+for e-commerce success - sales revenue or volume being sold? I would argue both, but 
+filtering based on raw sales_revenue is harder, but since there is a positive correlation, filtering based on the volume being sold will also 
+produce meaningful insights*/
+
+
+
+ 
