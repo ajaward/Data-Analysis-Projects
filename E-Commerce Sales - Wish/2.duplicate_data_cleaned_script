@@ -47,19 +47,19 @@ WHERE x.ctid < y.ctid
 	AND x.price = y.price 
 	AND x.retail_price = y.retail_price
  	AND x.units_sold = y.units_sold 
-    AND x.uses_ad_boosts = y.uses_ad_boosts
-    AND x.rating = y.rating 
+    	AND x.uses_ad_boosts = y.uses_ad_boosts
+    	AND x.rating = y.rating 
 	AND x.rating_count = y.rating_count 
-    AND x.countries_shipped_to = y.countries_shipped_to
-    AND x.origin_country = y.origin_country
-    AND x.merchant_title = y.merchant_title 
-    AND x.merchant_satisfaction = y.merchant_satisfaction
-    AND x.merchant_rating_count = x.merchant_rating_count
-    AND x.merchant_rating = y.merchant_rating
-    AND x.merchant_id = y.merchant_id 
-    AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
-    AND x.product_id = y.product_id
-    AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
+    	AND x.countries_shipped_to = y.countries_shipped_to
+    	AND x.origin_country = y.origin_country
+    	AND x.merchant_title = y.merchant_title 
+    	AND x.merchant_satisfaction = y.merchant_satisfaction
+    	AND x.merchant_rating_count = x.merchant_rating_count
+    	AND x.merchant_rating = y.merchant_rating
+    	AND x.merchant_id = y.merchant_id 
+    	AND x.merchant_has_profile_picture = y.merchant_has_profile_picture
+    	AND x.product_id = y.product_id
+    	AND x.merchant_satisfaction_temp = y.merchant_satisfaction_temp;
 
 -- COUNT(*) shows that total rows = 1573 
 -- There's an extra row that hasnt been selected cause it was duplicated thrice
