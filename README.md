@@ -1,2 +1,2 @@
 # Data Analysis Projects
-A collection of projects I have worked on. 
+A collection of data analysis projects I have worked on. 
